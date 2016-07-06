@@ -1,0 +1,42 @@
+[
+  {
+    "nazwa": "SPORT AMG SERWIS ROWEROWY",
+    "adres": "osiedle Złotej Jesieni 1C",
+    "numer": "731 767 405"
+  },
+  {
+    "nazwa": "Kornick Serwis Piotr Grzywna",
+    "adres": "osiedle Szklany Domy 1",
+    "numer": "509 182 441"
+  },
+  {
+    "nazwa": "FUNBIKES",
+    "adres": "Pleszowska 5",
+    "numer": "537 755 747"
+  },
+  {
+    "nazwa": "Serwis rowerowy PRESTO",
+    "adres": "Dobrego Pasterza 95",
+    "numer": "12 413 44 13"
+  },
+  {
+    "nazwa": "Sklep rowerowy Elmar",
+    "adres": "osiedle Piastów 60A",
+    "numer": "502 730 087"
+  },
+  {
+    "nazwa": "Cyklomaster. Zakład Naprawy Rowerów",
+    "adres": "Konstantego Ildefonsa Gałczyńskiego 10",
+    "numer": "12 647 92 33"
+  },
+  {
+    "nazwa": "MudSerwis Rowery",
+    "adres": "osiedle 2 Pułku Lotniczego 47B",
+    "numer": "12 357 11 19"
+  },
+  {
+    "nazwa": "VeloTech Sklep-serwis rowerowy",
+    "adres": "Krowoderskich Zuchów 24",
+    "numer": "666 316 604"
+  }
+]

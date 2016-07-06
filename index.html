@@ -1,0 +1,647 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1,
+width=device-width, height=device-height, target-densitydpi=device-dpi" />
+    <link rel="stylesheet" href="themes/uek.css" />
+    <link rel="stylesheet" href="themes/jquery.mobile.icons.min.css" />
+    <link rel="stylesheet" href="js/jquery.mobile-1.4.5.css">
+    <script src="js/jquery-1.12.2.js"></script>
+    <script src="js/jquery.mobile-1.4.5.js"></script>
+    <link rel="stylesheet" href="js/datapicker/jquery.mobile.datepicker.css">
+    <script src="js/datapicker/jquery.ui.datepicker.js"></script>
+    <script id="mobile-datepicker" src="js/datapicker/jquery.mobile.datepicker.js"></script>
+    <script type="text/javascript" charset="utf-8" src="phonegap.js"></script>
+    <script type="text/javascript" charset="utf-8" src="SQLitePlugin.js"></script>
+    <script type="text/javascript" charset="utf-8">
+
+        var db;
+
+        document.addEventListener("deviceready", onDeviceReady, false);
+
+        function onDeviceReady() {
+
+            //Budowanie bazy SQL
+            db = window.sqlitePlugin.openDatabase({name: "my.db", location: 0});
+
+            db.transaction(function (tx) {
+                tx.executeSql('CREATE TABLE IF NOT EXISTS naprawy (id integer primary key, data text, nazwa text, opis text, cena real)');
+            });
+            //Budowanie bazy SQL
+
+
+            //Dziennik Napraw - Usun pozycje Klik
+            $('#lista').on('tap', '#delete', function (event) {
+
+                var id = $(this).attr('idWpisu');
+                //alert(id);
+                usunWpisId(id);
+                //ponizej opoznia uruchomienie tej funkcji o pol sekundy, bez tego sie chrzanilo, bo za duzo usuwalo  - za szybko sie to dzialo
+                setTimeout(function () {
+                    dziennikNaprawZbudujListe();
+                }, 500);
+
+            });
+            //Dziennik Napraw - Usun pozycje Klik
+        }
+
+        // Przypisanie stylu do panelu - menu
+        $(function() {
+            //$("#ListaSerwisow").append("<li><a href='/user/messages'><span class='tab'>Message Center</span></a></li>");
+            $("body>[data-role='panel']").panel().enhanceWithin();
+        });
+
+        // Panel jest responsywny na przesunięcie palcem
+        $( document ).on( "swiperight", "", function( e ) {
+            // We check if there is no open panel on the page because otherwise
+            // a swipe to close the left panel would also open the right panel (and v.v.).
+            // We do this by checking the data that the framework stores on the page element (panel: open).
+            if ( $( ".ui-page-active" ).jqmData( "panel" ) !== "open" ) {
+                if ( e.type === "swiperight" ) {
+                    $( "#myPanelFixed" ).panel( "open" );
+                }
+            }
+        });
+        // Panel jest responsywny na przesunięcie palcem
+
+        //Przelicz Rozmiar Ramy - Klikniecie
+        $(function() {
+            $('#przeliczRozmiarRamy').click(function(){
+                // Get its current value
+                var size =  parseFloat($('input[name=dlugoscL]').val());
+                var type =  parseFloat($('select[name=typRamy]').val());
+
+                // If is not undefined
+                if (isNaN(size)) {
+                    $('#frameSizeINCH').html('0');
+                    $('#frameSizeCM').html('0');
+                } else {
+                    if(type == 1) {
+
+                        var frameSizeINCH = ((size * 0.227)*100)/100;
+                        var frameSizeCM = ((frameSizeINCH * 2.54)*100)/100;
+
+                    }
+
+                    if(type == 2){
+
+                        var frameSizeINCH = ((size * 0.246)*100)/100
+                        var frameSizeCM = ((frameSizeINCH * 2.569)*100)/100
+
+                    }
+
+                    $('#frameSizeINCH').html(frameSizeINCH.toFixed(0)+' "');
+                    $('#frameSizeCM').html(frameSizeCM.toFixed(0)+' cm');
+
+                }
+            });
+        })
+        //Przelicz Rozmiar Ramy - Klikniecie
+
+        //Lokalizacja Roweru - Ladowanie
+        $(document).on("pageshow","#LokalizujRower",function(){
+            $("#LokalizacjaRoweruMap").html("");
+
+            //navigator.geolocation.getCurrentPosition(onSuccess, onError);
+            navigator.geolocation.getCurrentPosition(onSuccess, onError);
+
+            if (localStorage.getItem("LokalizujRowerSzerokosc") != null && localStorage.getItem("LokalizujRowerDlugosc") != null
+            && localStorage.getItem("LokalizujRowerSzerokosc") != "" && localStorage.getItem("LokalizujRowerDlugosc") != ""){
+                $("#zapiszLokalizacjeRoweru").css('visibility', 'hidden');
+                $("#wyswietlLokalizacjeRoweru").css('visibility', 'visible');
+                $("#wyswietlLokalizacjeRoweruMapa").css('visibility', 'visible');
+                $("#czyscLokalizacjeRoweru").css('visibility', 'visible');
+            }
+
+            function onSuccess(position) {
+
+                $("#LokalizujRowerSzerokosc").html(position.coords.latitude);
+                $("#LokalizujRowerDlugosc").html(position.coords.longitude);
+                sessionStorage.setItem("LokalizujRowerSzerokoscCurrent", position.coords.latitude);
+                sessionStorage.setItem("LokalizujRowerDlugoscCurrent", position.coords.longitude);
+
+            }
+            function onError(error) {
+                alert('code: '    + error.code    + '\n' +
+                        'message: ' + error.message + '\n');
+            }
+
+        });
+        //Lokalizacja Roweru - Ladowanie
+
+        //Lokalizacja Roweru - Zapis
+        $(function() {
+            $('#zapiszLokalizacjeRoweru').click(function(){
+
+                var latitude = $("#LokalizujRowerSzerokosc").text();
+                var longtitude = $("#LokalizujRowerDlugosc").text();
+
+                if (latitude != "Err" && longtitude != "Err") {
+                    //alert("OK");
+                    localStorage.setItem("LokalizujRowerSzerokosc", latitude);
+                    localStorage.setItem("LokalizujRowerDlugosc", longtitude);
+
+                    $("#zapiszLokalizacjeRoweru").css('visibility', 'hidden');
+                    $("#wyswietlLokalizacjeRoweru").css('visibility', 'visible');
+                    $("#wyswietlLokalizacjeRoweruMapa").css('visibility', 'visible');
+                    $("#czyscLokalizacjeRoweru").css('visibility', 'visible');
+                }
+
+
+            });
+        })
+        //Lokalizacja Roweru - Zapis
+
+        // Lokalizacja Roweru - Pokazanie zapisanej
+        $(function () {
+            $('#wyswietlLokalizacjeRoweru').click(function(){
+                var latitude = localStorage.getItem("LokalizujRowerSzerokosc");
+                var longtitude = localStorage.getItem("LokalizujRowerDlugosc");
+
+                if (latitude != null && longtitude != null) {
+                    //alert("OK");
+                    $("#LokalizujRowerSzerokosc").text(latitude + " (zapisana)");
+                    $("#LokalizujRowerDlugosc").text(longtitude + " (zapisana)");
+                    $("#LokalizujRowerGPSData").text("Ostatnia zapisana lokalizacja.");
+                }
+
+            });
+        })
+        // Lokalizacja Roweru - Pokazanie zapisanej
+
+        // Lokalizacja Roweru - Pokazanie mapy
+        $(function () {
+            $('#wyswietlLokalizacjeRoweruMapa').click(function(){
+                var latitudeSaved = localStorage.getItem("LokalizujRowerSzerokosc");
+                var longtitudeSaved = localStorage.getItem("LokalizujRowerDlugosc");
+                var latitudeCurrent = sessionStorage.getItem("LokalizujRowerSzerokoscCurrent");
+                var longtitudeCurrent = sessionStorage.getItem("LokalizujRowerDlugoscCurrent");
+
+                if (latitudeSaved != null && longtitudeSaved != null) {
+
+                    $("#LokalizacjaRoweruMapa").text("Proszę czekać...");
+                    var networkState = navigator.connection.type;
+
+                    if (networkState == Connection.WIFI || networkState == Connection.CELL_3G || networkState == Connection.CELL_4G){
+                        var mapa = "<iframe id='Mapa' src='https://www.google.com/maps/embed/v1/directions?origin="+latitudeCurrent+",+"+longtitudeCurrent+"&destination="+latitudeSaved+",+"+longtitudeSaved+"&key=AIzaSyAmOYdY6kFPT-bTbAdW1AsG9f29b9w29fA' width='100%' height='450' frameborder='0' style='border:0' allowfullscreen></iframe>";
+                        $("#LokalizacjaRoweruMap").html(mapa);
+                    }
+                    else{
+                        var tekstMapa = "Niestety nie masz połączenia z Internetem lub łączysz się przez wolną sieć. Podłącz swoje urządzenie do sieci WiFi, 3G lub LTE.";
+                        $("#LokalizacjaRoweruMap").html(tekstMapa);
+                    }
+
+                }
+
+            });
+        })
+        // Lokalizacja Roweru - Pokazanie mapy
+
+        //Lokalizacja Roweru - Czyszczenie danych
+        $(function () {
+            $('#czyscLokalizacjeRoweru').click(function(){
+                localStorage.removeItem("LokalizujRowerSzerokosc");
+                localStorage.removeItem("LokalizujRowerDlugosc");
+
+                $("#zapiszLokalizacjeRoweru").css('visibility', 'visible');
+                $("#wyswietlLokalizacjeRoweru").css('visibility', 'hidden');
+                $("#wyswietlLokalizacjeRoweruMapa").css('visibility', 'hidden');
+                $("#czyscLokalizacjeRoweru").css('visibility', 'hidden');
+            });
+        })
+        //Lokalizacja Roweru - Czyszczenie danych
+
+        //MojRower - Ladowanie Strony
+        $(document).on("pageshow","#MojRower",function(){
+	    $("#MojRowerWyswietl").css('display', 'inline');
+            $("#MojRowerEdytuj").css('display', 'none');
+
+            MojRowerLoadData();
+
+        });
+        //MojRower - Ladowanie Strony
+
+        //MojRower - Ladowanie danych
+        function MojRowerLoadData(){
+            if (localStorage.getItem("MojRowerZdjecie") != null && localStorage.getItem("MojRowerZdjecie") != ""){
+                $("#MojRowerZdjecie").attr("src" , localStorage.getItem("MojRowerZdjecie"));
+            } else {
+                $("#MojRowerZdjecie").attr("src" , "img/empty.png");
+            }
+            $("#MojRowerMarka").text(localStorage.getItem("MojRowerMarka"));
+            $("#MojRowerModel").text(localStorage.getItem("MojRowerModel"));
+            $("#MojRowerRama").text(localStorage.getItem("MojRowerRama"));
+            $("#MojRowerPrzerzutkaPrzod").text(localStorage.getItem("MojRowerPrzerzutkaPrzod"));
+            $("#MojRowerPrzerzutkaTyl").text(localStorage.getItem("MojRowerPrzerzutkaTyl"));
+            $("#MojRowerKaseta").text(localStorage.getItem("MojRowerKaseta"));
+            $("#MojRowerKorby").text(localStorage.getItem("MojRowerKorby"));
+            $("#MojRowerOpony").text(localStorage.getItem("MojRowerOpony"));
+        }
+        //MojRower - Ladowanie danych
+
+        //MojRower - Edytuj Klikniecie
+        $(function () {
+            $('#EdytujMojRower').click(function(){
+                $("#MojRowerWyswietl").css('display', 'none');
+                $("#MojRowerEdytuj").css('display', 'inline');
+
+                if (localStorage.getItem("MojRowerZdjecie") != null && localStorage.getItem("MojRowerZdjecie") != ""){
+                    $("#MojRowerZdjecieEditImg").attr("src" , localStorage.getItem("MojRowerZdjecie"));
+                } else {
+                    $("#MojRowerZdjecieEditImg").attr("src" , "img/empty.png");
+                }
+
+                $("#MojRowerMarkaEdit").val(localStorage.getItem("MojRowerMarka"));
+                $("#MojRowerModelEdit").val(localStorage.getItem("MojRowerModel"));
+                $("#MojRowerRamaEdit").val(localStorage.getItem("MojRowerRama"));
+                $("#MojRowerPrzerzutkaPrzodEdit").val(localStorage.getItem("MojRowerPrzerzutkaPrzod"));
+                $("#MojRowerPrzerzutkaTylEdit").val(localStorage.getItem("MojRowerPrzerzutkaTyl"));
+                $("#MojRowerKasetaEdit").val(localStorage.getItem("MojRowerKaseta"));
+                $("#MojRowerKorbyEdit").val(localStorage.getItem("MojRowerKorby"));
+                $("#MojRowerOponyEdit").val(localStorage.getItem("MojRowerOpony"));
+
+            });
+        })
+        //MojRower - Edytuj Klikniecie
+
+        //MojRower - Zapisz Klikniecie
+        $(function () {
+            $('#ZapiszMojRower').click(function(){
+                $("#MojRowerWyswietl").css('display', 'inline');
+                $("#MojRowerEdytuj").css('display', 'none');
+
+                var image = document.getElementById('MojRowerZdjecieEditImg');
+                localStorage.setItem("MojRowerZdjecie", image.src);
+
+                localStorage.setItem("MojRowerMarka", $("#MojRowerMarkaEdit").val());
+                localStorage.setItem("MojRowerModel", $("#MojRowerModelEdit").val());
+                localStorage.setItem("MojRowerRama", $("#MojRowerRamaEdit").val());
+                localStorage.setItem("MojRowerPrzerzutkaPrzod", $("#MojRowerPrzerzutkaPrzodEdit").val());
+                localStorage.setItem("MojRowerPrzerzutkaTyl", $("#MojRowerPrzerzutkaTylEdit").val());
+                localStorage.setItem("MojRowerKaseta", $("#MojRowerKasetaEdit").val());
+                localStorage.setItem("MojRowerKorby", $("#MojRowerKorbyEdit").val());
+                localStorage.setItem("MojRowerOpony", $("#MojRowerOponyEdit").val());
+
+                MojRowerLoadData();
+            });
+        })
+        //MojRower - Zapisz Klikniecie
+
+        //MojRower - Edytuj Zdjecie Klikniecie
+        $(function () {
+            $('#MojRowerZdjecieEdit').click(function(){
+                navigator.camera.getPicture(onSuccessGetPicture, onFailGetPicture, { quality: 50,
+                    destinationType: Camera.DestinationType.DATA_URL
+                });
+                function onSuccessGetPicture(imageData) {
+                    $("#MojRowerZdjecieEditImg").attr("src" , "data:image/jpeg;base64," + imageData);
+                    //var image = document.getElementById('myImage');
+                    //image.src = "data:image/jpeg;base64," + imageData;
+                }
+
+                function onFailGetPicture(message) {
+                    alert('Błąd: ' + message);
+                }
+
+            });
+        });
+        //MojRower - Edytuj Zdjecie Klikniecie
+
+        //Dziennik Napraw - Ladowanie
+        $(document).on("pageshow","#DziennikNapraw",function(){
+
+            dziennikNaprawZbudujListe();
+
+        });
+        //Dziennik Napraw - Ladowanie
+
+        //Dziennik Napraw - Wypełnienie listy
+        function dziennikNaprawZbudujListe() {
+            $("#lista").empty();
+            db.transaction(function (tx) {
+                tx.executeSql("select id, data, nazwa, opis, cena from naprawy", [], function (tx, res) {
+                    for (i = 0; i < res.rows.length; i++) {
+                        //alert(i);
+                        var ID = res.rows.item(i).id.toString();
+                        var pobraneMojeID = res.rows.item(i).mojeID;
+                        var pobranaData = res.rows.item(i).data;
+                        var pobranaNazwa = res.rows.item(i).nazwa;
+                        var pobranyOpis = res.rows.item(i).opis;
+                        var pobranaCena = res.rows.item(i).cena;
+
+
+                        $("#lista").append('<li id=\"' + ID + '\"><a>Data: ' + pobranaData + '\<br\>' +
+                                ' Nazwa: ' + pobranaNazwa + ' \<br\> ' + pobranyOpis + '\<br\>' + ' Cena: ' + pobranaCena + '\<br\></a>' +
+                                '<a id="delete" idWpisu=\"'+ ID +'\" data-icon=\"delete\" data-iconpos="notext"></a></li>');
+                        $("#lista").listview("refresh");
+                    }
+                });
+            });
+        }
+        //Dziennik Napraw - Wypełnienie listy
+
+        //Dziennik Napraw - Zapisz Wpis Kliknięcie
+        $(function () {
+            $("#zapiszWpis").click(function () {
+                var data = $("#dataDziennik").val();
+                var nazwa = $("#nazwaDziennik").val();
+                var opis = $("#opisDziennik").val();
+                var cena = $("#cenaDziennik").val();
+
+
+                db.transaction(function (tx) {
+                    tx.executeSql("INSERT INTO naprawy (data, nazwa, opis, cena) VALUES (?,?,?,?)", [data, nazwa, opis, cena], function (tx, res) {
+                    });
+                });
+
+                $("#dataDziennik").val("");
+                $("#nazwaDziennik").val("");
+                $("#opisDziennik").val("");
+                $("#cenaDziennik").val("");
+                dziennikNaprawZbudujListe();
+            })
+        });
+        //Dziennik Napraw - Zapisz Wpis Kliknięcie
+
+        //Dziennik Napraw - Sortuj Listę
+        $(function () {
+            $("#sortujListe").click(function () {
+                var $list = $("#lista");
+                $list.children().detach().sort(function (a, b) {
+                    return $(a).text().localeCompare($(b).text());
+                }).appendTo($list);
+            })
+        });
+        //Dziennik Napraw - Sortuj Listę
+
+        //Dziennik Napraw - Usuń pozycje
+        function usunWpisId(id) {
+            db.transaction(function (tx) {
+                tx.executeSql("DELETE FROM naprawy where id=?", [id]);
+            });
+        }
+        //Dziennik Napraw - Usuń pozycje
+
+        //Serwisy Rowerowe - Ladowanie strony
+        $(document).on("pageshow","#SerwisyRowerowe",function(){
+            $('#ListaSerwisow').empty();
+            $.getJSON("serwisy.json", function(json) {
+                //console.log(json);
+                for(var i = 0; i < json.length; i++) {
+                    var obj = json[i];
+                    $("#ListaSerwisow").append('<li><b>' + obj.nazwa + '</b>\<br\>' +
+                            ' Adres: ' + obj.adres + ' \<br\>' + ' Telefon: ' + obj.numer + '\<br\>' +
+                            '</li>');
+                    $("#ListaSerwisow").listview("refresh");
+
+                }
+            });
+
+        });
+        //Serwisy Rowerowe - Ladowanie strony
+
+
+
+
+    </script>
+</head>
+<body onload="">
+
+<!-- Menu  -->
+<div data-role="panel" id="myPanelFixed" data-position="left" data-display="overlay" data-theme="c">
+    <ul data-role="listview" id="menulista">
+        <li data-icon="delete"><a href="#" data-rel="close">Zamknij</a></li>
+        <li data-icon="back"><a href="#" data-rel="back">Wstecz</a></li>
+        <li data-role="list-divider">Strony</li>
+        <li data-icon="home" data-transition="slide" data-direction="reverse"><a href="#Glowna" >Strona Główna</a></li>
+        <li ><a href="#MojRower" data-transition="slide">Mój rower</a></li>
+        <li ><a href="#DziennikNapraw" data-transition="slide" data-direction="reverse">Dziennik napraw</a></li>
+        <li ><a href="#LokalizujRower" data-transition="slide">Lokalizuj rower</a></li>
+        <li ><a href="#SerwisyRowerowe" data-transition="slide" data-direction="reverse">Serwisy rowerowe</a></li>
+        <li ><a href="#PrzeliczRame" data-transition="slide" >Przeliczanie rozmiaru ramy</a></li>
+
+    </ul>
+
+</div>
+<!-- Menu -->
+
+<!-- Strona Główna -->
+<div data-role="page" id="Glowna" data-theme="c">
+
+
+    <div data-role="header">
+        <a href="#myPanelFixed" data-icon="bars" data-iconpos="notext"></a>
+
+        <h1>Rowerowy niezbędnik</h1>
+    </div>
+
+    <div data-role="main" class="ui-content" style="text-align: center">
+        <p>
+            <b>Rowerowy Niezbędnik</b>
+        </p>
+        <p>Dziennik rowerowy pozwoli Ci na dobranie odpowiedniego roweru dla swojego wzrostu, lokalizację miejsca w któym zostawisz swój rower.
+            W aplikacji przechowasz dane na temat napraw i ich kosztów, oraz znajdziesz adresy serwisów rowerowych w Krakowie i okolicach.
+        Dodatkowo możesz przechować dane o swoim rowerze oraz zrobić mu zdjęcie.</p>
+        <p>Autor: <b>Piotr Kozak</b></p>
+        <p>Strona autora: <a href="http://pepe67.pl">www.pepe67.pl</a></p>
+        <p>Wersja aplikacji: <b>1.0.1</b></p>
+    </div>
+
+</div>
+<!-- Strona Główna -->
+
+<!-- Mój Rower -->
+<div data-role="page" id="MojRower" data-theme="c">
+    <div data-role="header">
+        <a href="#myPanelFixed" data-icon="bars" data-iconpos="notext"></a>
+        <h1>Mój rower</h1>
+    </div>
+
+    <div data-role="main" class="ui-content">
+        <div id="MojRowerWyswietl" >
+            <a id="EdytujMojRower" class="ui-btn ui-corner-all ui-shadow ui-btn-inline">Edytuj</a>
+            <p><img id="MojRowerZdjecie" style="width: 100%; height: auto;"></p>
+            <p>Marka: <span id="MojRowerMarka"></span></p>
+            <p>Model: <span id="MojRowerModel"></span></p>
+            <p>Rama: <span id="MojRowerRama"></span></p>
+            <p>Przerzutka przód: <span id="MojRowerPrzerzutkaPrzod"></span></p>
+            <p>Przerzutka tył: <span id="MojRowerPrzerzutkaTyl"></span></p>
+            <p>Kaseta: <span id="MojRowerKaseta"></span></p>
+            <p>Korby: <span id="MojRowerKorby"></span></p>
+            <p>Opony: <span id="MojRowerOpony"></span></p>
+        </div>
+        <div id="MojRowerEdytuj" style="display: none">
+            <label for="MojRowerZdjecieEdit">Zdjęcie: </label>
+            <a id="MojRowerZdjecieEdit" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"/><img id="MojRowerZdjecieEditImg" style="width: 100%; height: auto;"></a>
+            <label for="MojRowerMarkaEdit">Marka: </label>
+            <input type="text" name="MojRowerMarkaEdit" id="MojRowerMarkaEdit">
+            <label for="MojRowerModelEdit">Model: </label>
+            <input type="text" name="MojRowerModelEdit" id="MojRowerModelEdit">
+            <label for="MojRowerRamaEdit">Rama: </label>
+            <input type="text" name="MojRowerRamaEdit" id="MojRowerRamaEdit">
+            <label for="MojRowerPrzerzutkaPrzodEdit">Przerzutka przód: </label>
+            <input type="text" name="MojRowerPrzerzutkaPrzodEdit" id="MojRowerPrzerzutkaPrzodEdit">
+            <label for="MojRowerPrzerzutkaTylEdit">Przerzutka tył: </label>
+            <input type="text" name="MojRowerPrzerzutkaTylEdit" id="MojRowerPrzerzutkaTylEdit">
+            <label for="MojRowerKasetaEdit">Kaseta: </label>
+            <input type="text" name="MojRowerKasetaEdit" id="MojRowerKasetaEdit">
+            <label for="MojRowerKorbyEdit">Korby: </label>
+            <input type="text" name="MojRowerKorbyEdit" id="MojRowerKorbyEdit">
+            <label for="MojRowerOponyEdit">Opony: </label>
+            <input type="text" name="MojRowerOponyEdit" id="MojRowerOponyEdit">
+            <a id="ZapiszMojRower" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"/>Zapisz</a>
+        </div>
+    </div>
+
+</div>
+<!-- Mój Rower -->
+
+<!-- Dziennik Napraw -->
+<div data-role="page" id="DziennikNapraw" data-theme="c">
+    <div data-role="header">
+        <a href="#myPanelFixed" data-icon="bars" data-iconpos="notext"></a>
+        <h1>Dziennik napraw</h1>
+    </div>
+
+    <div data-role="main" class="ui-content">
+        <p>
+            <a href="#oknoDodawaniaNapraw" role="button"  data-rel="popup" class="ui-shadow ui-btn ui-corner-all ui-btn-inline"  data-transition="slidedown"
+               id="dodajWpis">Dodaj</a>
+            <a href="#" role="button" class="ui-shadow ui-btn ui-corner-all ui-btn-inline"  data-transition="slidedown"
+               id="sortujListe">A ->Z</a>
+        </p>
+        <p><ul data-role="listview" id="lista" data-filter="true" data-inset="true"></ul></p>
+
+
+        <!-- Dodaj Dialog-->
+        <div data-role="popup" id="oknoDodawaniaNapraw">
+            <div data-role="header">
+                <a href="#" class="ui-btn ui-corner-all ui-icon-back ui-btn-icon-notext ui-btn-left" data-rel="back"></a>
+                <h1>Dodawanie wpisu</h1>
+            </div>
+
+            <div data-role="main" class="ui-content">
+
+                <label for="dataDziennik">Data:</label>
+                <input id="dataDziennik" type="text" data-role="date">
+
+                <label for="nazwaDziennik">Skrócona nazwa naprawy:</label>
+                <input type="text" name="nazwaDziennik" id="nazwaDziennik">
+
+                <label for="opisDziennik">Opis naprawy:</label>
+
+                <textarea cols="40" rows="40" name="opisDziennik" id="opisDziennik"
+                  class="ui-input-text ui-body-c ui-corner-all ui-shadow-inset" style="height: 109px;"></textarea>
+
+                <label for="cenaDziennik">Cena za naprawę:</label>
+                <input type="number" step="0.01" min="0" name="cenaDziennik" id="cenaDziennik">
+
+                <a href="#DziennikNapraw" role="button" class="ui-shadow ui-btn ui-corner-all ui-btn-inline" data-transition="slidedown"
+                   id="zapiszWpis">Zapisz</a>
+
+            </div>
+        </div>
+            <!-- Dodaj Dialog-->
+
+    </div>
+
+</div>
+<!-- Dziennik Napraw -->
+
+<!-- Serwisy Rowerowe -->
+<div data-role="page" id="SerwisyRowerowe" data-theme="c">
+    <div data-role="header">
+        <a href="#myPanelFixed" data-icon="bars" data-iconpos="notext"></a>
+        <h1>Serwisy Rowerowe</h1>
+    </div>
+
+    <div data-role="main" class="ui-content">
+        <p>
+        <ul id="ListaSerwisow" data-role="listview" data-inset="true" data-filter="true">
+        </ul>
+
+        </p>
+    </div>
+
+</div>
+<!-- Serwisy Rowerowe -->
+
+<!-- Lokalizuj Rower -->
+<div data-role="page" id="LokalizujRower" data-theme="c">
+    <div data-role="header">
+        <a href="#myPanelFixed" data-icon="bars" data-iconpos="notext"></a>
+        <h1>Lokalizuj rower</h1>
+    </div>
+
+    <div data-role="main" class="ui-content">
+        <p>
+            <p id="LokalizujRowerGPSData"></p>
+            Szerokość: <span id="LokalizujRowerSzerokosc">Err</span><br/>
+            Długosć: <span id="LokalizujRowerDlugosc">Err</span>
+        </p>
+        <hr/>
+        <p>
+            <a id="zapiszLokalizacjeRoweru" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"/>Zapisz lokalizację</a>
+            <a id="wyswietlLokalizacjeRoweru" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" style="visibility: hidden;"/>Wyswietl zapisaną</a>
+            <a id="wyswietlLokalizacjeRoweruMapa" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" style="visibility: hidden"/>Pokaż na mapie</a>
+            <a id="czyscLokalizacjeRoweru" class="ui-btn ui-corner-all ui-shadow ui-btn-inline" style="visibility: hidden;"/>Wyczyść dane</a>
+        </p>
+        <p id="LokalizacjaRoweruMap"></p>
+    </div>
+
+</div>
+<!-- Lokalizuj Rower -->
+
+<!-- Przelicz Rame -->
+<div data-role="page" id="PrzeliczRame" data-theme="c">
+    <div data-role="header">
+        <a href="#myPanelFixed" data-icon="bars" data-iconpos="notext"></a>
+        <h1>Przeliczanie ramy</h1>
+    </div>
+
+    <div data-role="main" class="ui-content">
+        <p>
+        <p style="text-align: center"><b>KROK 1. DOKONAJ POMIARU DŁUGOŚCI WEWNĘTRZEJ STRONY NOGI (L)</b></p>
+        Oprócz wzrostu, jeszcze jeden wymiar jest kluczowy, aby wybrać odpowiedni rozmiar ramy -
+        jest nim długość wewnętrznej strony nogi L (zobacz obrazek po prawej stronie).
+        W zależności od pożądanego typu rower, wartość L jest podstawą do obliczenia wielkości
+        ramy Twojego wymarzonego roweru.
+        <br/><br/>
+        <b>Jak dokonać pomiaru?</b><br/>
+        <img src="img/przeliczRame/rama_l.png" style="display: block; margin-left: auto; margin-right: auto"/><br/>
+        Należy zmierzyć długość nogi po stronie wewnętrznej.
+        W tym celu najlepiej stanąć boso na równym podłożu. Między nogami można trzymać np.
+        poziomicę i metrówką zmierzyć odległość od górnej krawędzi poziomicy aż do podłoża.
+        </p>
+        <p>
+        <p style="text-align: center"> <b>KROK 2. OBLICZ ROZMIAR RAMY DLA CIEBIE</b></p>
+
+        <label for="dlugoscL">Wartość L w cm:</label>
+        <input type="range" name="dlugoscL" id="dlugoscL" value="50" min="20" max="200">
+
+        <label for="typRamy">Typ ramy</label>
+        <select name="typRamy" id="typRamy">
+            <option value="1">MTB (Górskie)</option>
+            <option value="1">Fullsuspension</option>
+            <option value="2">Trekkingowe</option>
+            <option value="2">Cross</option>
+        </select>
+        </p>
+        <p>
+            <a id="przeliczRozmiarRamy" class="ui-btn ui-corner-all ui-shadow ui-btn-inline"/>Oblicz</a>
+        </p>
+        <p>
+        <div class=""><h3>Rozmiar w calach: <span id="frameSizeINCH">0 "</span></h3></div>
+        <div class=""><h3>Rozmiar w cm: <span id="frameSizeCM"> 0 cm</span></h3></div>
+        </p>
+        <p>
+            <img src="img/przeliczRame/rama_r.png" alt="rozmiar_r" style="display: block; margin-left: auto; margin-right: auto">
+        </p>
+    </div>
+
+</div>
+<!-- Przelicz Rame -->
+
+<script type="text/javascript" src="cordova.js"></script>
+</body>
+</html>

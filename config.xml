@@ -1,0 +1,49 @@
+﻿<widget id="pl.pepe67.rowerowyniezbednik" version="1.0.1">
+
+	<name>RowerowyNiezbednik</name>
+	<description>
+		Dziennik rowerowy pozwoli Ci na dobranie odpowiedniego roweru dla swojego wzrostu, lokalizację miejsca w któym zostawisz swój rower.
+		W aplikacji przechowasz dane na temat napraw i ich kosztów, oraz znajdziesz adresy serwisów rowerowych w Krakowie i okolicach.
+		Dodatkowo możesz przechować dane o swoim rowerze oraz zrobić mu zdjęcie.
+	</description>
+	<author email="piotr.kozak2@outlook.com" href="http://pepe67.pl">
+		Piotr Kozak
+	</author>
+	<content src="index.html" />
+	<access origin="*" />
+
+	<!--Pluginy-->
+	<plugin name="com.brodysoft.sqliteplugin" spec="1.0.6" source="pgb" /><!-- SQLLite -->
+	<plugin name="com.jamiestarke.webviewdebug" spec="1.0.8" source="pgb" /><!-- Debugowanie -->
+	<plugin name="org.apache.cordova.camera" spec="0.3.6" source="pgb" /> <!-- Aparat -->
+	<plugin name="org.apache.cordova.network-information" spec="0.2.15" source="pgb" /> <!-- Internet -->
+	<plugin name="org.apache.cordova.geolocation" spec="0.3.12" source="pgb" /> <!-- GeoLokacja-->
+	<plugin name="org.apache.cordova.splashscreen"/> <!-- splashscreen -->
+
+	<!--Wersja phonegap'a-->
+	<!--<preference name="phonegap-version" value="cli-6.0.0" />-->
+
+	<!--Platformy-->
+	<platform name="android" />
+	<!--<platform name="winphone" />-->
+
+	<!--Ikony i Splash-->
+	<icon src="img/icon.png" />
+	<splash src="img/splash.png" />
+	<preference name="SplashScreen" value="splash"/>
+	<preference name="SplashScreenDelay" value="2000"/>
+	<platform name="android">
+		<splash src="img/splash.png" density="land-hdpi"/>
+		<splash src="img/splash.png" density="land-ldpi"/>
+		<splash src="img/splash.png" density="land-mdpi"/>
+		<splash src="img/splash.png" density="land-xhdpi"/>
+		<splash src="img/splash.png" density="port-hdpi"/>
+		<splash src="img/splash.png" density="port-ldpi"/>
+		<splash src="img/splash.png" density="port-mdpi"/>
+		<splash src="img/splash.png" density="port-xhdpi"/>
+	</platform>
+
+	<!--<splash platform="winphone" width="1152" height="1920" src="img/splash.png" />
+	<icon platform="winphone" width="106" height="106" src="img/icon.png" />-->
+
+</widget>
